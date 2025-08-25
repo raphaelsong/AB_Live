@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Character/ABCharacterBase.h"
+#include "InputActionValue.h"
 #include "ABCharacterPlayer.generated.h"
 
 /**
@@ -34,4 +35,24 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TObjectPtr<class UCameraComponent> FollowCamera;
+
+#pragma region InputSystem
+public:
+	void Look(const FInputActionValue& Value);
+	void Move(const FInputActionValue& Value);
+
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	TObjectPtr<class UInputMappingContext> IMCDefault;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	TObjectPtr<class UInputAction> IAJump;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	TObjectPtr<class UInputAction> IALook;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	TObjectPtr<class UInputAction> IAMove;
+#pragma endregion
+
 };
