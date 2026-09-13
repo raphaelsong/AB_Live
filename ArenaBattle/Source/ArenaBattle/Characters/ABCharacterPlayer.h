@@ -6,6 +6,8 @@
 #include "Characters/ABCharacterBase.h"
 #include "ABCharacterPlayer.generated.h"
 
+struct FInputActionValue;
+
 /**
  * 
  */
@@ -35,4 +37,21 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TObjectPtr<class UCameraComponent> FollowCamera;
+
+#pragma region InputSystem
+public:
+	void Move(const FInputActionValue& Value);
+	void Look(const FInputActionValue& Value);
+
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	TObjectPtr<class UInputMappingContext> IMCDefault;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	TObjectPtr<class UInputAction> MoveAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	TObjectPtr<class UInputAction> LookAction;
+#pragma endregion
+
 };
