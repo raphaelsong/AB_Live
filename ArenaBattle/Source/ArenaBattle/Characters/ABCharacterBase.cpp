@@ -35,5 +35,15 @@ AABCharacterBase::AABCharacterBase()
 	{
 		GetMesh()->SetSkeletalMesh(MeshRef.Object);
 	}
+
+	// Animation
+	GetMesh()->SetAnimationMode(EAnimationMode::AnimationBlueprint);
+
+	static ConstructorHelpers::FClassFinder<UAnimInstance> AnimClassRef(TEXT("/Script/Engine.AnimBlueprint'/Game/Animation/ABP_ABCharacter.ABP_ABCharacter_C'"));
+
+	if (AnimClassRef.Succeeded())
+	{
+		GetMesh()->SetAnimInstanceClass(AnimClassRef.Class);
+	}
 }
 
