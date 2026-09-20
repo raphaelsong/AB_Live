@@ -29,7 +29,11 @@ AABFountain::AABFountain()
 void AABFountain::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
+	if (Body)
+	{
+		Body->OnComponentHit.AddDynamic(this, &AABFountain::OnHit);
+	}
 }
 
 // Called every frame
@@ -37,5 +41,10 @@ void AABFountain::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+}
+
+void AABFountain::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+{
+	Destroy();
 }
 
