@@ -4,11 +4,12 @@
 #include "Characters/ABCharacterBase.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "CharacterData/ABComboAttackData.h"
 
 // Sets default values
 AABCharacterBase::AABCharacterBase()
 {
- 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
 	// Pawn
@@ -45,5 +46,54 @@ AABCharacterBase::AABCharacterBase()
 	{
 		GetMesh()->SetAnimInstanceClass(AnimClassRef.Class);
 	}
+
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> ComboAttackMontageRef(TEXT("/Script/Engine.AnimMontage'/Game/Animation/AM_ComboAttack.AM_ComboAttack'"));
+	
+	if (ComboAttackMontageRef.Succeeded())
+	{
+		ComboAttackMontage = ComboAttackMontageRef.Object;
+	}
+
+	static ConstructorHelpers::FObjectFinder<UABComboAttackData> ComboAttackDataRef(TEXT("/Script/ArenaBattle.ABComboAttackData'/Game/CharacterData/DA_ComboAttack.DA_ComboAttack'"));
+
+	if (ComboAttackDataRef.Succeeded())
+	{
+		ComboAttackData = ComboAttackDataRef.Object;
+	}
+}
+
+void AABCharacterBase::ComboCommand()
+{
+	if (CurrentCombo == 0)
+	{
+		ComboBegin();
+		return;
+	}
+
+	// 콤보 연결 처리
+
+}
+
+void AABCharacterBase::ComboBegin()
+{
+	CurrentCombo = 1;
+	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None);
+
+	const float AttackSpeedRate = 1.0f;
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance)
+	{
+		AnimInstance->Montage_Play(ComboAttackMontage, AttackSpeedRate);
+	}
+
+	FOnMontageEnded EndDelegate;
+	EndDelegate.BindUObject(this, &AABCharacterBase::ComboEnd);
+	AnimInstance->Montage_SetEndDelegate(EndDelegate, ComboAttackMontage);
+}
+
+void AABCharacterBase::ComboEnd(UAnimMontage* TargetMontage, bool IsProperlyEnded)
+{
+	CurrentCombo = 0;
+	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
 }
 

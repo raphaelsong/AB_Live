@@ -15,4 +15,19 @@ public:
 	// Sets default values for this character's properties
 	AABCharacterBase();
 
+	/* Combo Attack Section*/
+public:
+	void ComboCommand();
+
+	virtual void ComboBegin();
+	virtual void ComboEnd(class UAnimMontage* TargetMontage, bool IsProperlyEnded);
+
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animation)
+	TObjectPtr<class UAnimMontage> ComboAttackMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = CharacterData)
+	TObjectPtr<class UABComboAttackData> ComboAttackData;
+
+	int32 CurrentCombo = 0;
 };

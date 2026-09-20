@@ -42,7 +42,7 @@ protected:
 	float JumpingThreshould = 100.0f;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement Data")
-	bool bIsIdle = false;
+	bool bIsIdle = true;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement Data")
 	bool bIsFalling;
