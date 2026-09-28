@@ -30,6 +30,14 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+// PlayerHUD Section
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = HUD)
+	TSubclassOf<class UABPlayerHUDWidget> WBP_PlayerHUDWidget;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = HUD)
+	TObjectPtr<class UABPlayerHUDWidget> ABPlayerHUDWidget;
+
 // Add Component
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)

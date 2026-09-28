@@ -5,6 +5,8 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Interface/ABAttackInterface.h"
+#include "CharacterData/ABCharacterStat.h"
+#include "Components/ABStatComponent.h"
 #include "ABCharacterBase.generated.h"
 
 UCLASS()
@@ -16,8 +18,50 @@ public:
 	// Sets default values for this character's properties
 	AABCharacterBase();
 
+public:
+	virtual void PostInitializeComponents() override;
+
 protected:
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
+
+	/* Character Stat Section*/
+public:
+	FORCEINLINE TObjectPtr<UABStatComponent> GetStatComponent()
+	{
+		return StatComponent;
+	}
+
+	FORCEINLINE int32 GetLevel()
+	{
+		if (StatComponent)
+			return StatComponent->GetCurrentLevel();
+		return 0;
+	}
+
+	FORCEINLINE void SetLevel(int32 InNewLevel)
+	{
+		if (StatComponent)
+			StatComponent->SetupLevel(InNewLevel);
+	}
+
+public:
+	void ApplyStat(const FABCharacterStat& BaseStat, const FABCharacterStat& ModifierStat);
+
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	TObjectPtr<UABStatComponent> StatComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	TObjectPtr<class UWidgetComponent> HpBarWidgetComponent;
+
+	/* Dead Section*/
+public:
+	virtual void SetDead();
+	void PlayDeadAnimation();
+
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Dead)
+	TObjectPtr<class UAnimMontage> DeadMontage;
 
 	/* Combo Attack Section*/
 public:

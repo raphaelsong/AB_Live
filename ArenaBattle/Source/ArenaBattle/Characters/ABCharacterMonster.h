@@ -16,4 +16,10 @@ class ARENABATTLE_API AABCharacterMonster : public AABCharacterBase
 	
 public:
 	AABCharacterMonster();
+
+public:
+	virtual void SetDead() override;
+
+private:
+	float DeadEventDelayTime = 5.0f;
 };

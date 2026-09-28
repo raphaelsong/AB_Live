@@ -7,6 +7,8 @@
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "CharacterData/ABComboAttackData.h"
+#include <Components/WidgetComponent.h>
+#include "UI/ABHpBarWidget.h"
 
 // Sets default values
 AABCharacterBase::AABCharacterBase()
@@ -63,15 +65,85 @@ AABCharacterBase::AABCharacterBase()
 	{
 		ComboAttackData = ComboAttackDataRef.Object;
 	}
+
+	// Dead Section
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> DeadMontageRef(TEXT("/Script/Engine.AnimMontage'/Game/Animation/AM_Dead.AM_Dead'"));
+	if (DeadMontageRef.Succeeded())
+	{
+		DeadMontage = DeadMontageRef.Object;
+	}
+
+	// Character Stat Section
+	StatComponent = CreateDefaultSubobject<UABStatComponent>(TEXT("StatComponent"));
+
+	// Widget Component
+	HpBarWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("HpBarComponent"));
+	HpBarWidgetComponent->SetupAttachment(GetMesh());
+	HpBarWidgetComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 200.0f));
+
+	static ConstructorHelpers::FClassFinder<UABHpBarWidget> HpBarWidgetRef(TEXT("/Script/UMGEditor.WidgetBlueprint'/Game/UI/WBP_HpBar.WBP_HpBar_C'"));
+	if (HpBarWidgetRef.Succeeded())
+	{
+		HpBarWidgetComponent->SetWidgetClass(HpBarWidgetRef.Class);
+		HpBarWidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
+		HpBarWidgetComponent->SetDrawAtDesiredSize(true);
+		HpBarWidgetComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+}
+
+void AABCharacterBase::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+	check(StatComponent);
+	StatComponent->OnHpZero.AddUObject(this, &AABCharacterBase::SetDead);
+	StatComponent->OnStatChanged.AddUObject(this, &AABCharacterBase::ApplyStat);
+
+	check(HpBarWidgetComponent);
+	HpBarWidgetComponent->InitWidget();
+	UABHpBarWidget* HpBarWidget = Cast<UABHpBarWidget>(HpBarWidgetComponent->GetUserWidgetObject());
+	if (HpBarWidget)
+	{
+		StatComponent->OnHpChanged.AddUObject(HpBarWidget, &UABHpBarWidget::UpdateHp);
+		StatComponent->OnStatChanged.AddUObject(HpBarWidget, &UABHpBarWidget::UpdateStat);
+	}
 }
 
 float AABCharacterBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
-	GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Magenta, TEXT("TakeDamage"));
+	StatComponent->ApplyDamage(DamageAmount);
 
 	return DamageAmount;
+}
+
+void AABCharacterBase::ApplyStat(const FABCharacterStat& BaseStat, const FABCharacterStat& ModifierStat)
+{
+	float MovementSpeed = (BaseStat + ModifierStat).MovementSpeed;
+	GetCharacterMovement()->MaxWalkSpeed = MovementSpeed;
+}
+
+void AABCharacterBase::SetDead()
+{
+	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None);
+	SetActorEnableCollision(false);
+	PlayDeadAnimation();
+
+	if (HpBarWidgetComponent)
+	{
+		HpBarWidgetComponent->SetHiddenInGame(true);
+	}
+}
+
+void AABCharacterBase::PlayDeadAnimation()
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance)
+	{
+		AnimInstance->StopAllMontages(0.0f);
+		AnimInstance->Montage_Play(DeadMontage);
+	}
 }
 
 void AABCharacterBase::ComboCommand()
@@ -99,7 +171,7 @@ void AABCharacterBase::ComboBegin()
 	CurrentCombo = 1;
 	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None);
 
-	const float AttackSpeedRate = 1.0f;
+	const float AttackSpeedRate = StatComponent->GetTotalStat().AttackSpeed;
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 	if (AnimInstance)
 	{
@@ -125,7 +197,7 @@ void AABCharacterBase::SetComboCheckTimer()
 	int32 ComboIndex = CurrentCombo - 1;
 	ensure(ComboAttackData->EffectiveFrameCount.IsValidIndex(ComboIndex));
 
-	const float AttackSpeedRate = 1.0f;
+	const float AttackSpeedRate = StatComponent->GetTotalStat().AttackSpeed;
 	float ComboEffectiveTime = (ComboAttackData->EffectiveFrameCount[ComboIndex] / ComboAttackData->FrameRate) / AttackSpeedRate;
 
 	if (ComboEffectiveTime > 0.0f)
@@ -159,9 +231,9 @@ void AABCharacterBase::AttackHitCheck()
 	FCollisionQueryParams CollParam;
 	CollParam.AddIgnoredActor(this);
 
-	const float AttackRange = 120.0f;
-	const float AttackRadius = 40.0f;
-	const float AttackDamage = 30.0f;
+	const float AttackRange = StatComponent->GetTotalStat().AttackRange;
+	const float AttackRadius = StatComponent->GetTotalStat().AttackRadius;
+	const float AttackDamage = StatComponent->GetTotalStat().Attack;
 
 	const FVector Start = GetActorLocation() + GetActorForwardVector() * GetCapsuleComponent()->GetScaledCapsuleRadius();
 	const FVector End = Start + GetActorForwardVector() * AttackRange;
