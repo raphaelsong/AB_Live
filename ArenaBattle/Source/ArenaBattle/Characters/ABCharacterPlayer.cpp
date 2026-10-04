@@ -9,6 +9,10 @@
 #include "CharacterData/ABCharacterStat.h"
 #include "Components/ABStatComponent.h"
 #include "UI/ABPlayerHUDWidget.h"
+#include <Components/SkeletalMeshComponent.h>
+#include "Item/ABItemPotionData.h"
+#include "Item/ABItemScrollData.h"
+#include "Item/ABItemWeaponData.h"
 
 AABCharacterPlayer::AABCharacterPlayer()
 {
@@ -26,6 +30,15 @@ AABCharacterPlayer::AABCharacterPlayer()
 	{
 		WBP_PlayerHUDWidget = HUDWidgetRef.Class;
 	}
+
+	// Weapon Component
+	WeaponComponent = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Weapon"));
+	WeaponComponent->SetupAttachment(GetMesh(), TEXT("hand_rSocket"));
+
+	// Item Section
+	TakeItemActions.Add(EItemType::Potion, FOnTakeItemDelegate::CreateUObject(this, &AABCharacterPlayer::DrinkPotion));
+	TakeItemActions.Add(EItemType::Scroll, FOnTakeItemDelegate::CreateUObject(this, &AABCharacterPlayer::ReadScroll));
+	TakeItemActions.Add(EItemType::Weapon, FOnTakeItemDelegate::CreateUObject(this, &AABCharacterPlayer::EquipWeapon));
 }
 
 void AABCharacterPlayer::BeginPlay()
@@ -75,6 +88,60 @@ void AABCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 	EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);
 	EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
 	EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Started, this, &AABCharacterPlayer::Attack);
+}
+
+void AABCharacterPlayer::TakeItem(UABItemData* InItemData)
+{
+	if (InItemData && TakeItemActions.Contains(InItemData->Type))
+	{
+		TakeItemActions[InItemData->Type].ExecuteIfBound(InItemData);
+	}
+}
+
+void AABCharacterPlayer::DrinkPotion(UABItemData* InItemData)
+{
+	UABItemPotionData* ItemPotionData = Cast<UABItemPotionData>(InItemData);
+	if (ItemPotionData)
+	{
+		if (StatComponent)
+		{
+			StatComponent->SetHp(StatComponent->GetCurrentHealth() + ItemPotionData->HealAmount);
+		}
+	}
+}
+
+void AABCharacterPlayer::ReadScroll(UABItemData* InItemData)
+{
+	UABItemScrollData* ItemScrollData = Cast<UABItemScrollData>(InItemData);
+	if (ItemScrollData)
+	{
+		if (StatComponent)
+		{
+			StatComponent->AddBaseStat(ItemScrollData->BaseStat);
+		}
+	}
+}
+
+void AABCharacterPlayer::EquipWeapon(UABItemData* InItemData)
+{
+	UABItemWeaponData* ItemWeaponData = Cast<UABItemWeaponData>(InItemData);
+	if (ItemWeaponData)
+	{
+		if (ItemWeaponData->WeaponMesh.IsPending())
+		{
+			ItemWeaponData->WeaponMesh.LoadSynchronous();
+		}
+
+		if (WeaponComponent)
+		{
+			WeaponComponent->SetSkeletalMesh(ItemWeaponData->WeaponMesh.Get());
+		}
+
+		if (StatComponent)
+		{
+			StatComponent->SetModifierStat(ItemWeaponData->ModifierStat);
+		}
+	}
 }
 
 void AABCharacterPlayer::Move(const FInputActionValue& Value)

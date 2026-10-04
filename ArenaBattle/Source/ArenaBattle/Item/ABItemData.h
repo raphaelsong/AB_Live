@@ -28,7 +28,7 @@ public:
 		return FPrimaryAssetId("ABItemData", GetFName());
 	}
 
-protected:
+public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Type)
 	EItemType Type;
 };
