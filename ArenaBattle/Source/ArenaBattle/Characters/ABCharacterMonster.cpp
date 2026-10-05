@@ -2,9 +2,20 @@
 
 
 #include "Characters/ABCharacterMonster.h"
+#include <Engine/AssetManager.h>
 
 AABCharacterMonster::AABCharacterMonster()
 {
+	GetMesh()->SetHiddenInGame(true);
+}
+
+void AABCharacterMonster::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+	ensure(MonsterMeshes.Num() > 0);
+	int32 RandIndex = FMath::RandRange(0, MonsterMeshes.Num() - 1);
+	MonsterMeshHandle = UAssetManager::Get().GetStreamableManager().RequestAsyncLoad(MonsterMeshes[RandIndex], FStreamableDelegate::CreateUObject(this, &AABCharacterMonster::MonsterMeshLoadCompleted));
 }
 
 void AABCharacterMonster::SetDead()
@@ -19,4 +30,19 @@ void AABCharacterMonster::SetDead()
 			Destroy();
 		}
 	), DeadEventDelayTime, false);
+}
+
+void AABCharacterMonster::MonsterMeshLoadCompleted()
+{
+	if (MonsterMeshHandle.IsValid())
+	{
+		USkeletalMesh* MonsterMesh = Cast<USkeletalMesh>(MonsterMeshHandle->GetLoadedAsset());
+		if (MonsterMesh)
+		{
+			GetMesh()->SetSkeletalMesh(MonsterMesh);
+			GetMesh()->SetHiddenInGame(false);
+		}
+	}
+
+	MonsterMeshHandle->ReleaseHandle();
 }
